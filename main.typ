@@ -1,5 +1,4 @@
 #import "@preview/supercharged-dhbw:3.4.1": *
-#import "acronyms.typ": acronyms
 #import "glossary.typ": glossary
 
 #show: supercharged-dhbw.with(
@@ -12,7 +11,6 @@
       (name: "SAP SE", post-code: "69190", city: "Walldorf")
     )),
   ),
-  acronyms: acronyms,
   at-university: false,
   bibliography: bibliography("sources.bib"),
   date: datetime(year: 2026, month: 5, day: 8),
@@ -22,135 +20,138 @@
   university: "Duale Hochschule Baden-Württemberg",
   university-location: "Mannheim",
   university-short: "DHBW",
+  show-confidentiality-statement: false,
+  show-declaration-of-authorship: false,
+  show-list-of-tables: false,
+  show-list-of-figures: false,
+  show-code-snippets: false,
+  show-acronyms: false,
 )
+
 
 = Einleitung
 
-Rekursion ist eines der grundlegendsten und gleichzeitig faszinierendsten Konzepte der Informatik und Mathematik. Sie beschreibt ein Prinzip, bei dem etwas nicht explizit, sondern durch einfachere Versionen seiner selbst definiert wird @lorenz2012. Was auf den ersten Blick wie ein logischer Zirkel wirkt, erweist sich bei näherer Betrachtung als ein äußerst mächtiges Werkzeug: Viele Probleme, die sich iterativ nur umständlich beschreiben lassen, besitzen eine natürliche, elegante rekursive Formulierung.
+Rekursion begegnet uns häufiger, als man zunächst denkt. Ob das Blätterwerk eines Baumes, verschachtelte Ordnerstrukturen auf dem Computer oder die Grammatik einer Programmiersprache – viele Dinge sind von Natur aus rekursiv aufgebaut. In der Mathematik kennt man das schon lange: Die Fakultät, Folgen oder der euklidische Algorithmus basieren alle auf demselben Prinzip, auch wenn es dort selten so genannt wird.
 
-Im Alltag begegnet uns Rekursion häufiger, als wir es zunächst vermuten würden. Das Blätterwerk eines Baumes, die Verzweigungen eines Flusssystems oder Schneeflockenmuster folgen rekursiven Bildungsgesetzen. In der Mathematik tritt Rekursion schon in der Schule auf, etwa bei der Definition von Folgen oder bei der Fakultätsfunktion – auch wenn der Begriff selbst dort oft vermieden wird. In der Informatik und insbesondere in der funktionalen Programmierung nimmt Rekursion eine zentrale Rolle ein: Sie ist das primäre Mittel zur Beschreibung von Wiederholungen, da rein funktionale Sprachen wie Haskell auf veränderliche Zustandsvariablen und klassische Schleifen verzichten @pepper2006.
+In der funktionalen Programmierung ist Rekursion noch zentraler: Da Sprachen wie Haskell keine veränderbaren Variablen kennen, gibt es auch keine klassischen Schleifen. Stattdessen werden Wiederholungen immer durch Rekursion ausgedrückt @pepper2006. Diese Ausarbeitung erklärt, was Rekursion ist, wie sie funktioniert, welche Varianten es gibt und wie sie in der Praxis eingesetzt wird.
 
-Diese Ausarbeitung beleuchtet zunächst die theoretischen Grundlagen und die Geschichte der Rekursion, erläutert anschließend rekursive Funktionen und rekursive Datenstrukturen und zeigt schließlich deren konkrete Umsetzung in der funktionalen Programmiersprache Haskell. Abschließend werden Querverbindungen zu verwandten Themen wie Listen, Datenstrukturen und dem Lambda-Kalkül hergestellt.
-
-= Definition und Grundlagen der Rekursion
+= Definition und Grundlagen
 
 == Was ist Rekursion?
 
-#gls("Rekursion") bezeichnet in der Mathematik und Informatik ein Konstruktionsprinzip, bei dem eine Definition unmittelbar oder mittelbar auf sich selbst verweist. Eine oft zitierte, informelle Beschreibung lautet: _„Man definiert etwas nicht explizit, sondern durch einfachere Versionen seiner selbst"_ @lorenz2012. Entscheidend dabei ist das Wort „einfacher": Damit eine rekursive Definition sinnvoll ist und nicht ins Unendliche führt, muss jeder Selbstaufruf das Problem auf eine kleinere, einfachere Variante zurückführen.
+Rekursion bedeutet, dass sich eine Funktion oder eine Datenstruktur in ihrer eigenen Definition auf sich selbst bezieht. Das klingt erst mal widersprüchlich, funktioniert aber, weil bei jedem Selbstaufruf das Problem ein Stück kleiner wird. Lorenz beschreibt es so: _„Man definiert etwas nicht explizit, sondern durch einfachere Versionen seiner selbst"_ @lorenz2012.
 
-Jede korrekte rekursive Definition besteht daher aus mindestens zwei Bestandteilen. Der erste ist der *#gls("Basisfall")*, auch Verankerung oder Abbruchbedingung genannt. Er beschreibt einen Spezialfall, der sich direkt und ohne weiteren Selbstaufruf lösen lässt. Er stellt sicher, dass die Rekursion irgendwann terminiert. Der zweite Bestandteil ist der *allgemeine Fall*, auch Vererbung genannt. Hier wird das eigentliche Problem auf eine einfachere Version desselben Problems zurückgeführt, indem die Funktion sich selbst mit einem reduzierten Argument aufruft – dem sogenannten #gls("Selbstaufruf"). Das allgemeine Standard-Rekursionsschema lässt sich formal wie folgt darstellen @lorenz2012:
+Damit das nicht ewig weitergeht, braucht jede Rekursion zwei Teile:
 
-$ f(x) = cases(
-  c(x) & "falls" P(x) & "(Basisfall)",
-  h(x\, f(phi(x))) & "sonst" & "(allgemeiner Fall)"
-) $
-
-Dabei bezeichnet $P(x)$ die Abbruchbedingung, $phi$ die Vorgängerfunktion, welche das Argument in Richtung Basisfall verkleinert, und $h$ die Schrittfunktion, die aus dem aktuellen Argument und dem Ergebnis des rekursiven Aufrufs den neuen Wert berechnet.
+- *Basisfall* (auch Verankerung): Der einfachste Fall, der direkt beantwortet werden kann – ohne weiteren Selbstaufruf. Er sorgt dafür, dass die Rekursion irgendwann aufhört.
+- *Allgemeiner Fall* (auch Vererbung): Das aktuelle Problem wird auf ein kleineres Problem desselben Typs zurückgeführt, indem die Funktion sich selbst mit einem verkleinerten Argument aufruft.
 
 == Historischer Hintergrund
 
-Die Geschichte der Rekursion reicht weit zurück. Den ersten bekannten rekursiven Algorithmus lieferte Euklid im dritten Jahrhundert vor Christus mit dem Verfahren der wechselnden Wegnahme zur Berechnung des #acr("GGT") zweier ganzer Zahlen. Die Grundidee ist bestechend einfach: Haben zwei Stäbe der Längen $a$ und $b$ ein gemeinsames Maß, so hat auch der kürzere Stab und die Differenz der beiden Stäbe ein gemeinsames Maß. Das Verfahren wird solange wiederholt, bis beide Stäbe gleich lang sind – das ist dann der gesuchte größte gemeinsame Teiler @lorenz2012.
+Den ältesten bekannten rekursiven Algorithmus hat Euklid im dritten Jahrhundert vor Christus beschrieben: das Verfahren der wechselnden Wegnahme zur Berechnung des größten gemeinsamen Teilers. Die Idee: Zwei Zahlen $a$ und $b$ haben denselben größten gemeinsamen Teiler wie $b$ und der Rest der Division $a$ durch $b$. Man wiederholt das so lange, bis der Rest Null ist – dann ist man fertig @lorenz2012.
 
-Im 19. Jahrhundert formalisierte Richard Dedekind den Begriff der rekursiven Definition im Rahmen der Peano-Axiome für die natürlichen Zahlen. Die Grundoperationen Addition und Multiplikation werden dort nicht durch explizite Formeln, sondern durch rekursive Schemata definiert. Im 20. Jahrhundert wurde Rekursion durch die Arbeiten von David Hilbert, Kurt Gödel und Alonzo Church zum zentralen Gegenstand der mathematischen Logik und der Berechenbarkeitstheorie. Der Begriff „rekursiv" im modernen Sinne wurde erstmals von Gödel in seinen Arbeiten über primitive und allgemein rekursive Funktionen verwendet.
+Im 19. Jahrhundert formalisierte Giuseppe Peano die natürlichen Zahlen durch seine Peano-Axiome. Darin sind die natürlichen Zahlen induktiv definiert: Die Null existiert, und jede weitere natürliche Zahl ist der Nachfolger einer vorherigen. Grundoperationen wie Addition und Multiplikation lassen sich darauf aufbauend rekursiv definieren @lorenz2012.
 
-In der Informatik etablierte sich Rekursion spätestens mit der Entwicklung der Programmiersprache LISP in den späten 1950er Jahren als fundamentales Konzept. John McCarthy, der Entwickler von LISP, erkannte, dass sich viele Berechnungen auf natürliche Weise als rekursive Funktionsdefinitionen ausdrücken lassen – eine Einsicht, die die gesamte Entwicklung der funktionalen Programmierung prägte.
+Im 20. Jahrhundert untersuchten Kurt Gödel und Alonzo Church, welche Funktionen überhaupt berechenbar sind. Gödel arbeitete dabei mit dem Konzept der primitiv-rekursiven Funktionen. In der Informatik wurde Rekursion dann mit der Sprache LISP (1958, John McCarthy) zum praktischen Werkzeug: McCarthy erkannte, dass man viele Berechnungen direkt als rekursive Funktionen schreiben kann.
 
-== Strukturelle Rekursion und induktive Datentypen
+== Strukturelle Rekursion
 
-Ein besonders wichtiges Konzept ist die *#gls("Strukturelle_Rekursion")*. Sie tritt auf, wenn eine rekursive Funktion der Struktur ihres Eingabedatentyps folgt. Induktiv definierte Datentypen – also Typen, die entweder ein Basisobjekt oder eine Kombination aus einfacheren Objekten desselben Typs sind – und strukturell rekursive Funktionen über ihnen besitzen eine tiefe strukturelle Gleichheit @lorenz2012. Die natürlichen Zahlen etwa sind entweder die Null oder der Nachfolger einer natürlichen Zahl; eine Funktion, die über natürliche Zahlen rekursiv arbeitet, behandelt entsprechend den Fall Null als Basisfall und den Nachfolger-Fall als allgemeinen Fall. Diese Parallelität ist kein Zufall, sondern ein fundamentales Prinzip: Die Struktur korrekter rekursiver Programme spiegelt stets die Struktur der Daten wider, auf denen sie operieren.
+Besonders wichtig ist die *strukturelle Rekursion*: Eine Funktion folgt dabei dem Aufbau des Datentyps, den sie verarbeitet. Wenn ein Datentyp selbst rekursiv definiert ist, ergibt sich die passende Funktion darüber fast automatisch @lorenz2012.
+
+Das zeigt sich gut an den natürlichen Zahlen: Man kann sie induktiv beschreiben – entweder ist eine Zahl die Null (Basisfall), oder sie ist der Nachfolger einer anderen natürlichen Zahl (allgemeiner Fall). Eine Funktion über natürliche Zahlen behandelt genau diese zwei Fälle:
 
 #figure(
-  caption: "Strukturelle Parallele zwischen induktivem Datentyp und rekursiver Funktion",
+  caption: "Strukturelle Entsprechung zwischen Datentyp und Funktion",
   table(
-    columns: (1fr, 1fr),
-    inset: 10pt,
-    align: horizon,
-    table.header([*Natürliche Zahlen (induktiv)*], [*Rekursive Funktion f(n)*]),
-    [$0$ → Basisfall], [$f(0) = c_0$ → Basisfall],
-    [Nachfolger $n' = n+1$], [$f(n) = h(n, f(n-1))$ → allg. Fall],
+    columns: (auto, 1fr, 1fr),
+    inset: 9pt,
+    align: (center, left, left),
+    table.header([], [*Natürliche Zahlen*], [*Rekursive Funktion f(n)*]),
+    [*Basisfall*],
+    [Die Zahl 0 existiert.],
+    [Für $n = 0$ gibt es eine direkte Antwort, z.B. $f(0) = 1$ bei der Fakultät.],
+    [*Allg. Fall*],
+    [Jedes $n > 0$ ist der Nachfolger von $n-1$.],
+    [Für $n > 0$ wird $f(n-1)$ berechnet und mit $n$ verknüpft: $f(n) = n dot f(n-1)$.],
   )
 )
 
+Das Prinzip: Wer den Aufbau des Datentyps kennt, weiß bereits, welche Fälle die Funktion behandeln muss.
+
 = Rekursive Funktionen
 
-== Grundprinzip und das Fakultätsbeispiel
+== Das Fakultätsbeispiel
 
-Das bekannteste Einführungsbeispiel für eine rekursive Funktion ist die Fakultät. Mathematisch ist sie definiert als das Produkt aller positiven ganzen Zahlen bis einschließlich $n$. Statt diese Summe mit Pünktchenschreibweise anzudeuten, lässt sich die Fakultät präzise rekursiv erfassen: Die Fakultät von Null ist Eins (Basisfall), und die Fakultät einer beliebigen positiven Zahl $n$ ist $n$ multipliziert mit der Fakultät von $n-1$ (allgemeiner Fall). Diese Definition beschreibt exakt das Berechnungsverfahren: Um $n!$ zu berechnen, muss man erst $(n-1)!$ kennen, um $(n-1)!$ zu berechnen, muss man $(n-2)!$ kennen, und so fort, bis man beim Basisfall $0! = 1$ angelangt ist.
+Die Fakultät ist das klassische Beispiel. Sie ist definiert als das Produkt aller ganzen Zahlen von 1 bis $n$, also z.B. $4! = 1 dot 2 dot 3 dot 4 = 24$. Rekursiv lässt sich das so ausdrücken: Die Fakultät von 0 ist 1 (Basisfall), und für alle anderen $n$ gilt $n! = n dot (n-1)!$ (allgemeiner Fall).
 
-In Java lässt sich diese mathematische Definition direkt als Methode umschreiben. Die `if`-Verzweigung entspricht dabei exakt der mathematischen Fallunterscheidung: Der Basisfall $n = 0$ wird explizit abgefangen und liefert sofort den Wert $1$ zurück. Für alle anderen Werte ruft sich die Methode mit dem um Eins verkleinerten Argument selbst auf und multipliziert das Ergebnis anschließend mit $n$.
+In Java schreibt sich das fast genauso:
 
 #figure(
-  caption: "Rekursive Fakultät in Java",
+  caption: "Rekursive Berechnung der Fakultät in Java",
   sourcecode[```java
   public static long factorial(int n) {
       if (n == 0) {
-          return 1;           // Basisfall
+          return 1;                 // Basisfall
       }
-      return n * factorial(n - 1);  // allgemeiner Fall
+      return n * factorial(n - 1); // allgemeiner Fall
   }
   ```]
 )
 
-Der Aufruf `factorial(4)` löst dabei die folgende Aufrufkette aus: `factorial(4)` wartet auf `factorial(3)`, dieses auf `factorial(2)`, dieses auf `factorial(1)`, und erst `factorial(0)` liefert direkt $1$ zurück. Danach werden die Ergebnisse in umgekehrter Reihenfolge zusammengesetzt: $1 dot 1 = 1$, $2 dot 1 = 2$, $3 dot 2 = 6$, $4 dot 6 = 24$.
+Was passiert beim Aufruf `factorial(4)`? Die Methode ruft sich selbst immer wieder auf, bis sie bei `factorial(0)` ankommt und direkt 1 zurückgibt. Danach werden die Ergebnisse rückwärts zusammengesetzt: $1$, dann $1 dot 1 = 1$, dann $2 dot 1 = 2$, dann $3 dot 2 = 6$, schließlich $4 dot 6 = 24$.
 
-== Terminierung und Korrektheit
+== Terminierung
 
-Eine zentrale Frage bei jeder rekursiven Funktion ist die der Terminierung: Kommt die Berechnung irgendwann zu einem Ende, oder läuft sie unendlich lange? Eine rekursive Funktion terminiert genau dann für alle Eingaben, wenn die Vorgängerfunktion $phi$ das Argument monoton auf den Basisfall zuführt, also bei jedem Schritt eine wohldefinierte Größe strikt abnimmt @lorenz2012. Beim Fakultätsbeispiel ist diese Größe das Argument selbst: es wird bei jedem Aufruf um genau Eins verkleinert und erreicht schließlich den Basisfall Null.
+Eine Rekursion muss irgendwann aufhören. Das funktioniert nur, wenn das Argument bei jedem Aufruf strikt kleiner wird und irgendwann den Basisfall erreicht @lorenz2012. Bei der Fakultät nimmt $n$ bei jedem Schritt um genau 1 ab – das führt zwingend zu $n = 0$.
 
-Nicht jede rekursive Funktion terminiert für alle Eingaben. Sogenannte partiell berechenbare Funktionen sind nur für einen Teil ihrer möglichen Argumente definiert. Dies führt in der Praxis zum gefürchteten „Hängen" eines Programms – das Programm antwortet nicht mehr, weil es in einem unendlichen Rekursionszyklus gefangen ist. Lorenz beschreibt dieses Phänomen treffend: _„Keine Antwort ist auch keine Antwort"_ @lorenz2012.
+Fehlt der Basisfall oder wird das Argument nicht verkleinert, läuft die Rekursion endlos. In Java endet das mit einem `StackOverflowError`, weil für jeden offenen Aufruf Speicher auf dem Aufrufstapel belegt wird – und der ist nicht unbegrenzt groß.
 
 == Endrekursion
 
-Ein praktisches Problem naiver Rekursion ist der Speicherverbrauch. Bei jedem Funktionsaufruf legt das Laufzeitsystem einen neuen Eintrag auf dem Aufrufstapel (Call Stack) an, der den lokalen Zustand der Berechnung festhält. Bei tiefer Rekursion kann dieser Stapel überlaufen – ein sogenannter Stack Overflow. Die *#gls("Endrekursion")* bietet eine elegante Lösung: Eine Funktion ist endrekursiv, wenn der rekursive Aufruf die allerletzte Operation der Funktion ist und dessen Ergebnis direkt zurückgegeben wird, ohne danach noch mit einem weiteren Wert verknüpft zu werden. In diesem Fall benötigt der Compiler den bisherigen Stackframe nicht mehr und kann ihn wiederverwenden, anstatt einen neuen anzulegen. Diese Optimierung heißt _Tail Call Optimization_ und ist in Haskell sowie den meisten anderen funktionalen Sprachen garantiert. Endrekursive Funktionen sind damit in ihrem Speicherverbrauch äquivalent zu imperativen Schleifen.
+Genau dieser Speicherverbrauch ist ein praktisches Problem bei tiefer Rekursion. Bei der normalen Fakultät muss Java sich für jeden offenen Aufruf merken, mit welchem $n$ es noch multiplizieren muss. Das ergibt bei $n = 10.000$ auch 10.000 offene Einträge auf dem Stack.
 
-Um die Fakultätsfunktion endrekursiv zu machen, wird ein Akkumulator eingeführt, der das bisherige Zwischenergebnis mitführt. Statt das Ergebnis des rekursiven Aufrufs noch mit $n$ multiplizieren zu müssen, wird die Multiplikation bereits vor dem Aufruf durchgeführt und dem Akkumulator übergeben.
+Die *Endrekursion* (englisch: tail recursion) löst das: Eine Funktion ist endrekursiv, wenn der rekursive Aufruf die allerletzte Operation ist und das Ergebnis direkt zurückgegeben wird – ohne dass danach noch etwas damit passiert. Der Compiler kann dann den alten Stackeintrag einfach wiederverwenden. Dafür führt man einen Akkumulator ein, der das Zwischenergebnis mitträgt:
 
-== Gegenseitige und verschachtelte Rekursion
+Statt `return n * factorial(n-1)` (Multiplikation nach dem Aufruf) schreibt man den rekursiven Aufruf so, dass die Multiplikation bereits vorher erledigt und als Parameter übergeben wird. In Sprachen wie Haskell ist diese Optimierung garantiert. In Java hingegen optimiert die Standard-Laufzeitumgebung Endrekursion nicht automatisch – dort ist man besser mit einer Schleife bedient @lorenz2012.
 
-Neben der direkten Rekursion, bei der eine Funktion sich selbst aufruft, gibt es weitere Varianten. Bei der *gegenseitigen Rekursion* rufen sich zwei oder mehr Funktionen wechselseitig auf. Ein klassisches Beispiel sind die Funktionen `isEven` und `isOdd`: eine Zahl ist gerade, wenn ihr Vorgänger ungerade ist, und ungerade, wenn ihr Vorgänger gerade ist. Bei der *verschachtelten Rekursion* tritt der Selbstaufruf als Argument eines weiteren Selbstaufrufs auf. Das bekannteste Beispiel ist die Ackermann-Funktion, die zwar für alle natürlichen Zahlen terminiert, aber so schnell wächst, dass sie praktisch nicht berechenbar ist und auch nicht durch das primitive Rekursionsschema erfasst werden kann @lorenz2012.
+== Weitere Varianten
+
+Bei der *gegenseitigen Rekursion* rufen sich zwei Funktionen abwechselnd auf. Zum Beispiel: `istGerade(n)` ruft `istUngerade(n-1)` auf, und umgekehrt. Beide bilden zusammen eine Rekursion, bis der Basisfall ($n = 0$) erreicht ist.
+
+Bei der *verschachtelten Rekursion* ist der Selbstaufruf selbst wieder ein Argument eines weiteren Selbstaufrufs. Das bekannteste Beispiel ist die *Ackermann-Funktion*. Sie ist für alle natürlichen Zahlen berechenbar und terminiert immer – aber sie wächst so extrem schnell, dass sie schon für kleine Eingaben astronomische Werte annimmt. Wichtig: Die Ackermann-Funktion ist *nicht* primitiv-rekursiv, also nicht durch einfache Schleifen mit vorher bekannter Schrittzahl darstellbar. Das zeigt, dass Rekursion ausdrucksstärker ist als Schleifen @lorenz2012.
 
 = Rekursive Datenstrukturen
 
-== Das Konzept induktiver Datentypen
+Nicht nur Funktionen, sondern auch Datenstrukturen können rekursiv aufgebaut sein. Man nennt sie *induktive Datentypen*: Ihre Definition besteht aus einem Basisfall und einem allgemeinen Fall, der auf den Typ selbst verweist @block2011.
 
-Nicht nur Funktionen, sondern auch Datenstrukturen können rekursiv definiert sein. Ein rekursiver Datentyp ist ein Typ, dessen Definition sich auf sich selbst bezieht – analog zur rekursiven Funktionsdefinition mit einem Basisfall und einem allgemeinen Fall. Solche Typen werden in der Informatik auch als *induktive Datentypen* bezeichnet, weil man alle möglichen Werte des Typs konstruktiv „aufzählen" kann: Man beginnt mit dem Basisfall und erzeugt durch wiederholte Anwendung des allgemeinen Falls alle weiteren Werte @block2011.
+*Listen* sind das bekannteste Beispiel. Eine Liste ist entweder leer (Basisfall) oder sie hat ein erstes Element (Kopf) und dahinter eine weitere Liste (Schwanz). Funktionen über Listen folgen genau diesem Aufbau: Der Basisfall behandelt die leere Liste direkt, der allgemeine Fall verarbeitet den Kopf und ruft sich rekursiv für den Schwanz auf. Die Länge einer leeren Liste ist 0, sonst 1 plus die Länge des Schwanzes – ganz einfach.
 
-Der Vorteil rekursiver Datentypen liegt in ihrer natürlichen Beschreibungskraft: Viele Probleme besitzen eine inhärent rekursive Struktur, und induktive Datentypen ermöglichen es, diese Struktur direkt im Programmcode abzubilden. Funktionale Sprachen wie Haskell haben diese Idee zur zentralen Grundlage ihres Typsystems gemacht.
+*Bäume* funktionieren genauso. Ein Binärbaum ist entweder ein leeres Blatt (Basisfall) oder ein Knoten mit einem Wert und zwei Teilbäumen (allgemeiner Fall). Die Tiefe eines Baumes berechnet man rekursiv: Man fragt die Tiefen des linken und rechten Teilbaums ab und nimmt das Maximum. Ein leeres Blatt hat Tiefe 0.
 
-== Listen
+Der Vorteil: Wenn man den Aufbau der Datenstruktur kennt, ergibt sich die Struktur der passenden Funktion von selbst. Das macht rekursive Programme über solche Typen leichter zu schreiben und zu verstehen @block2011.
 
-Die Liste ist der prototypische rekursive Datentyp in der funktionalen Programmierung. Eine Liste ist entweder leer oder sie besteht aus einem ersten Element (dem Kopf) und einer weiteren Liste (dem Schwanz). Diese Definition ist vollständig induktiv: Der Basisfall ist die leere Liste, und der allgemeine Fall kombiniert ein beliebiges Element mit einer bereits bestehenden Liste zu einer neuen, längeren Liste @block2011.
+= Rekursion in der funktionalen Programmierung
 
-In Haskell wird diese Struktur direkt durch Pattern Matching ausgenutzt. Funktionen über Listen folgen zwingend diesem Aufbau: Sie behandeln die leere Liste als Basisfall und zerlegen im allgemeinen Fall die Liste in Kopf und Schwanz. Die Länge einer Liste ist Null, wenn sie leer ist, andernfalls Eins plus die Länge des Schwanzes. Die Summe einer leeren Liste ist Null, andernfalls das erste Element plus die Summe der restlichen Elemente. Dieses Muster zieht sich durch praktisch alle Listenoperationen und macht den Code nicht nur knapp, sondern auch leicht nachvollziehbar.
+== Rekursion statt Schleifen
 
-== Bäume
+In Sprachen wie Java benutzt man `for`- oder `while`-Schleifen für Wiederholungen – dabei wird eine Variable mit jedem Durchlauf verändert. In rein funktionalen Sprachen wie Haskell gibt es das nicht: Einmal zugewiesene Werte bleiben unveränderlich @pepper2006.
 
-Bäume sind ein weiterer wichtiger rekursiver Datentyp, der in der Informatik allgegenwärtig ist – von Dateisystemen über Syntaxbäume von Programmiersprachen bis hin zu Datenbanken. Ein Binärbaum ist entweder ein leeres Blatt (Basisfall) oder ein Knoten, der einen Wert sowie einen linken und einen rechten Teilbaum enthält (allgemeiner Fall). Auch hier folgt die Struktur des Datentyps direkt der Struktur der rekursiven Funktionen, die ihn verarbeiten: Um die Tiefe eines Baumes zu bestimmen, berechnet man rekursiv die Tiefen des linken und rechten Teilbaums und nimmt das Maximum. Der Basisfall – ein leeres Blatt – hat die Tiefe Null.
+Deshalb übernimmt dort Rekursion die Rolle der Schleifen. Statt eine Variable zu erhöhen, übergibt man den neuen Wert als Argument an den nächsten Aufruf. Das Ergebnis ist dasselbe, nur ohne veränderbaren Zustand. Durch Endrekursion und die dazugehörige Compileroptimierung ist das auch in Bezug auf Speicher und Geschwindigkeit gleichwertig zu einer Schleife.
 
-= Rekursion im Kontext der funktionalen Programmierung
+== Lazy Evaluation und unendliche Listen
 
-== Rekursion als Ersatz für Schleifen
-
-In imperativen Programmiersprachen wie Java oder C werden Wiederholungen durch Schleifen ausgedrückt. Eine `for`-Schleife etwa wiederholt einen Block von Anweisungen, während eine Zählvariable verändert wird. In rein funktionalen Sprachen hingegen gibt es keine veränderbaren Variablen – ein Wert, dem einmal ein Ausdruck zugewiesen wurde, bleibt unveränderlich. Damit ist das Konzept einer Schleife mit veränderbarem Zustand grundsätzlich nicht realisierbar @pepper2006.
-
-Rekursion übernimmt diese Rolle vollständig. Was imperative Programmierung durch Zustandsveränderung ausdrückt, drückt funktionale Programmierung durch Parameterübergabe aus: Statt eine Variable zu inkrementieren, übergibt man den neuen Wert als Argument an den nächsten rekursiven Aufruf. Das Ergebnis ist semantisch äquivalent, aber ohne jeden veränderbaren Zustand. Durch _Tail Call Optimization_ ist diese Form der Rekursion auch hinsichtlich Laufzeit und Speicherbedarf mit Schleifen gleichwertig.
-
-== Lazy Evaluation und unendliche Strukturen
-
-Ein bemerkenswertes Merkmal von Haskell ist die sogenannte _lazy evaluation_ (bedarfsgesteuerte Auswertung): Ausdrücke werden erst dann berechnet, wenn ihr Wert tatsächlich benötigt wird. In Verbindung mit Rekursion ermöglicht dies die Definition potenziell unendlicher Datenstrukturen. Eine unendliche Liste aller natürlichen Zahlen lässt sich in Haskell direkt hinschreiben, da die Sprache nur so viele Elemente tatsächlich berechnet, wie später abgefragt werden. Dieses Konzept wird auch als _Stream_ bezeichnet und verbindet Rekursion eng mit dem Thema Listen und Streams @krypczyk2021.
+Haskell wertet Ausdrücke erst aus, wenn ihr Wert wirklich gebraucht wird – das nennt sich *lazy evaluation* (bedarfsgesteuerte Auswertung). Kombiniert mit Rekursion kann man damit sogar unendliche Datenstrukturen definieren, z.B. eine Liste aller natürlichen Zahlen. Haskell berechnet dann nur so viele Elemente, wie tatsächlich benötigt werden. Solche potenziell unendlichen Listen nennt man auch *Streams* und sie sind eng mit dem Thema Listen verbunden @krypczyk2021.
 
 == Verbindung zum Lambda-Kalkül
 
-Im reinen Lambda-Kalkül, dem theoretischen Fundament der funktionalen Programmierung, gibt es zunächst keine direkte Möglichkeit, benannte, sich selbst aufrufende Funktionen zu definieren. Rekursion wird dort durch den *Y-Kombinator* realisiert, einen sogenannten Fixpunktoperator. Er nimmt eine Funktion entgegen und gibt deren Fixpunkt zurück – also denjenigen Wert $f(x) = x$, der unter wiederholter Anwendung der Funktion unverändert bleibt. Mithilfe des Y-Kombinators lässt sich jede rekursive Funktion in eine äquivalente, nicht-rekursive Form im Lambda-Kalkül überführen. Dies beweist, dass Rekursion keine primitive Sprachfunktion sein muss, sondern sich aus einfachsten Grundbausteinen konstruieren lässt @pepper2006.
+Im Lambda-Kalkül – dem theoretischen Fundament der funktionalen Programmierung – gibt es keine Möglichkeit, Funktionen direkt zu benennen und sich selbst aufzurufen. Rekursion wird dort über den *Y-Kombinator* umgesetzt, einen sogenannten Fixpunktoperator. Er gibt für eine Funktion $f$ denjenigen Wert $x$ zurück, für den gilt $f(x) = x$. Damit kann man Rekursion aus dem Lambda-Kalkül heraus ableiten, ohne sie eingebaut zu haben @pepper2006.
 
-== Höherwertige Funktionen als verallgemeinerte Rekursion
+== Höherwertige Funktionen
 
-In der Praxis wird in Haskell Rekursion oft nicht explizit ausgeschrieben, sondern durch höherwertige Funktionen abstrahiert. Funktionen wie `map`, `filter` und `foldr` kapseln wiederkehrende Rekursionsmuster und machen den Code kürzer und ausdrucksstärker. `foldr` etwa ist eine Verallgemeinerung der strukturellen Rekursion über Listen: Es nimmt eine Funktion und einen Startwert entgegen und kombiniert alle Listenelemente durch rekursive Anwendung dieser Funktion. Viele bekannte Listenoperationen – Summe, Produkt, Länge, Umkehrung – lassen sich als Spezialfall von `foldr` darstellen. Diese höherwertigen Funktionen sind selbst rekursiv implementiert; sie machen die Rekursion für den Programmierer unsichtbar, ohne das zugrunde liegende Prinzip zu ändern @block2011.
+In der Praxis schreibt man in Haskell Rekursion oft nicht direkt aus, sondern benutzt höherwertige Funktionen wie `map`, `filter` oder `foldr`. Diese kapseln häufig vorkommende Rekursionsmuster. `foldr` zum Beispiel verallgemeinert die strukturelle Rekursion über Listen: Es kombiniert alle Elemente einer Liste durch eine übergebene Funktion von rechts nach links. Summe, Länge oder Umkehrung einer Liste lassen sich alle als Spezialfall von `foldr` schreiben. Die Rekursion steckt dabei immer noch drin – sie ist nur versteckt @block2011.
 
 = Fazit
 
-Rekursion ist weit mehr als ein Programmiertrick – sie ist ein grundlegendes Denkprinzip, das Mathematik und Informatik seit Jahrtausenden durchzieht. Die Idee, ein Problem durch Rückführung auf eine einfachere Version desselben Problems zu lösen, begegnet uns von Euklids Algorithmus bis hin zu modernen Typsystemen.
+Rekursion ist kein komplizierter Trick, sondern ein natürliches Denkprinzip: Man löst ein Problem, indem man es auf eine kleinere Version desselben Problems zurückführt. Das haben Menschen schon vor mehr als 2000 Jahren gemacht – mit dem euklidischen Algorithmus.
 
-In der funktionalen Programmierung nimmt Rekursion eine besonders zentrale Stellung ein. Da unveränderliche Werte klassische Schleifen ausschließen, ist Rekursion das einzige Wiederholungsprinzip. Gleichzeitig ermöglicht die enge Verbindung zwischen induktiven Datentypen und strukturell rekursiven Funktionen einen klaren, mathematisch fundierten Programmierstil: Die Korrektheit eines Programms lässt sich oft direkt aus der Struktur des Datentyps ablesen, und die Implementierung ergibt sich fast zwingend aus der Problemdefinition.
-
-Konzepte wie Endrekursion und bedarfsgesteuerte Auswertung zeigen, dass Rekursion nicht nur elegant, sondern auch effizient sein kann. Haskell demonstriert eindrucksvoll, wie ein vollständig auf Rekursion und unveränderlichen Werten aufgebautes Sprachdesign zu ausdrucksstarker, wartbarer und theoretisch fundierter Software führt. Das Verständnis von Rekursion ist daher nicht nur akademisch wertvoll, sondern eine unverzichtbare Grundlage für das Denken in modernen Programmierkonzepten.
+In der funktionalen Programmierung ist Rekursion besonders wichtig, weil es ohne veränderliche Variablen keine Schleifen geben kann. Wer versteht, wie induktive Datentypen aufgebaut sind, kann darüber fast automatisch korrekte rekursive Funktionen schreiben. Konzepte wie Endrekursion zeigen außerdem, dass rekursive Programme auch effizient sein können – nicht nur elegant.
