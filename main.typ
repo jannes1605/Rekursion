@@ -71,7 +71,7 @@ Create figures or tables like this:
 
 === Figures
 
-#figure(caption: "Image Example", image(width: 4cm, "assets/ts.svg"))
+//#figure(caption: "Image Example", image(width: 4cm, "assets/ts.svg"))
 
 === Tables
 
@@ -120,19 +120,3 @@ Insert code snippets like this:
 
 #pagebreak()
 
-== References
-
-Cite like this #cite(form: "prose", <iso18004>).
-Or like this @iso18004.
-
-You can also reference by adding `<ref>` with the desired name after figures or headings.
-
-For example this @table references the table on the previous page.
-
-= Conclusion
-
-#lorem(100)
-
-#lorem(120)
-
-#lorem(80)
