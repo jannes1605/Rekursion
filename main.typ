@@ -92,6 +92,29 @@ In Java schreibt sich das fast genauso:
   ```]
 )
 
+Zum Vergleich dieselbe Funktion in Scala – kürzer, ohne veränderbare Variablen:
+
+#figure(
+  caption: "Dieselbe Funktion in Scala",
+  table(
+    columns: (1fr, 1fr),
+    inset: 8pt,
+    align: left,
+    table.header([*Java*], [*Scala*]),
+    [```java
+public static long factorial(int n) {
+    if (n == 0) { return 1; }
+    return n * factorial(n - 1);
+}
+    ```],
+    [```scala
+def factorial(n: Int): Long =
+  if n == 0 then 1
+  else n * factorial(n - 1)
+    ```],
+  )
+)
+
 Was passiert beim Aufruf `factorial(4)`? Abbildung 2 zeigt den Aufrufstapel (Call Stack): Die Methode ruft sich selbst auf, bis sie bei `factorial(0)` ankommt und direkt 1 zurückgibt. Danach werden die Ergebnisse schrittweise rückwärts aufgelöst.
 
 #figure(
@@ -180,58 +203,9 @@ Der Vorteil: Wenn man den Aufbau der Datenstruktur kennt, ergibt sich die Strukt
 
 = Rekursion in der funktionalen Programmierung
 
-In Sprachen wie Java benutzt man `for`- oder `while`-Schleifen für Wiederholungen – dabei wird eine Variable bei jedem Durchlauf verändert. In rein funktionalen Sprachen hingegen bleiben Werte nach der Zuweisung unveränderlich, sogenannte *Immutability*. Schleifen, die auf veränderbaren Variablen basieren, passen dort nicht ins Konzept @pepper2006.
+In Sprachen wie Java benutzt man `for`- oder `while`-Schleifen für Wiederholungen. In rein funktionalen Sprachen wie Haskell gibt es das nicht – Werte sind unveränderlich (*Immutability*), also kann man keine Schleifenvariable hochzählen. Rekursion übernimmt dort komplett die Rolle der Schleifen: Statt `i++` übergibt man den neuen Wert einfach als Argument an den nächsten Aufruf @pepper2006.
 
-Deshalb übernimmt Rekursion dort die Rolle der Schleifen: Statt eine Variable hochzuzählen, übergibt man den neuen Wert als Argument an den nächsten Aufruf. Das Ergebnis ist dasselbe – nur ohne veränderbaren Zustand @entwickler_rekursion.
-
-*Scala* ist ein gutes Beispiel, weil es beides unterstützt: die objektorientierte Welt von Java und funktionale Konzepte. Ein direkter Vergleich zeigt den Unterschied:
-
-#figure(
-  caption: "Fakultät iterativ in Java vs. rekursiv in Scala",
-  table(
-    columns: (1fr, 1fr),
-    inset: 8pt,
-    align: left,
-    table.header([*Java – iterativ*], [*Scala – rekursiv*]),
-    [```java
-long factorial(int n) {
-  long result = 1;
-  for (int i = 1; i <= n; i++) {
-    result = result * i;
-  }
-  return result;
-}
-    ```],
-    [```scala
-def factorial(n: Int): Long =
-  if n == 0 then 1
-  else n * factorial(n - 1)
-    ```],
-  )
-)
-
-Beide Varianten liefern dasselbe Ergebnis. Die Java-Version verändert `result` und `i` mit jedem Schleifendurchlauf. Die Scala-Version kommt ohne veränderbare Variablen aus – der Ablauf ergibt sich allein durch die Struktur der rekursiven Aufrufe. In Scala kann man außerdem mit `@tailrec` sicherstellen, dass der Compiler endrekursive Funktionen automatisch in eine Schleife umwandelt – dann entsteht kein Stacküberlauf @odersky2021.
-
-In Haskell, einer rein funktionalen Sprache, ist dieser Stil noch konsequenter. Funktionen werden durch *Pattern Matching* definiert: Man schreibt für jeden Fall eine eigene Zeile, und Haskell wählt automatisch die passende. Das folgende Beispiel zeigt die Fakultät und eine Funktion zum Summieren einer Liste – beide ohne eine einzige veränderbare Variable:
-
-#figure(
-  caption: "Fakultät und Listensumme rekursiv in Haskell",
-  sourcecode[```haskell
-  -- Fakultät: Basisfall und allgemeiner Fall
-  factorial :: Int -> Int
-  factorial 0 = 1                        -- Basisfall
-  factorial n = n * factorial (n - 1)    -- allgemeiner Fall
-
-  -- Summe einer Liste: leere Liste und Kopf/Schwanz
-  sumList :: [Int] -> Int
-  sumList []     = 0                     -- Basisfall: leere Liste
-  sumList (x:xs) = x + sumList xs        -- Kopf + Summe des Rests
-  ```]
-)
-
-Die Struktur entspricht exakt dem, was wir bisher in Java und Scala gesehen haben – nur schreibt man in Haskell keine `if`-Bedingungen, sondern Gleichungen pro Fall. Das `(x:xs)` ist Haskell-Notation für „erstes Element `x` und restliche Liste `xs`" und entspricht dem Kopf-Schwanz-Prinzip der rekursiven Listenstruktur @block2011.
-
-Neben der direkten Rekursion bieten funktionale Sprachen höherwertige Funktionen wie `map`, `filter` oder `fold`, die häufige Rekursionsmuster kapseln. Die Rekursion steckt dabei weiterhin drin – sie ist nur versteckt und muss nicht jedes Mal neu geschrieben werden @block2011.
+Scala zeigt den Unterschied gut, weil es beide Welten kennt. Die iterative Java-Variante der Fakultät verändert in jeder Runde `result` und `i`. Die rekursive Scala-Variante kommt ohne veränderbare Variablen aus – mit `@tailrec` wandelt der Compiler sie außerdem automatisch in eine Schleife um, sodass kein Stacküberlauf entstehen kann @odersky2021. Das Ergebnis ist in beiden Fällen gleich, der Weg dorthin unterscheidet sich grundlegend.
 
 = Fazit
 
