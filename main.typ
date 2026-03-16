@@ -33,26 +33,20 @@
 
 Rekursion begegnet uns häufiger, als man zunächst denkt. Ob das Blätterwerk eines Baumes, verschachtelte Ordnerstrukturen auf dem Computer oder die Grammatik einer Programmiersprache – viele Dinge sind von Natur aus rekursiv aufgebaut. In der Mathematik kennt man das schon lange: Die Fakultät, Folgen oder der euklidische Algorithmus basieren alle auf demselben Prinzip, auch wenn es dort selten so genannt wird.
 
-In der funktionalen Programmierung ist Rekursion noch zentraler: Da Sprachen wie Haskell keine veränderbaren Variablen kennen, gibt es auch keine klassischen Schleifen. Stattdessen werden Wiederholungen immer durch Rekursion ausgedrückt @pepper2006. Diese Ausarbeitung erklärt, was Rekursion ist, wie sie funktioniert, welche Varianten es gibt und wie sie in der Praxis eingesetzt wird.
+In der funktionalen Programmierung ist Rekursion noch zentraler: Da Sprachen wie Haskell keine veränderbaren Variablen kennen, gibt es auch keine klassischen Schleifen. Stattdessen werden Wiederholungen immer durch Rekursion ausgedrückt @pepper2006. Diese Ausarbeitung erklärt, was Rekursion ist, wie sie funktioniert, welche Varianten es gibt und wie sie in der Praxis eingesetzt wird @infschule2024 @lenz_rekursion.
 
 = Definition und Grundlagen
 
 == Was ist Rekursion?
 
-Rekursion bedeutet, dass sich eine Funktion oder eine Datenstruktur in ihrer eigenen Definition auf sich selbst bezieht. Das klingt erst mal widersprüchlich, funktioniert aber, weil bei jedem Selbstaufruf das Problem ein Stück kleiner wird. Lorenz beschreibt es so: _„Man definiert etwas nicht explizit, sondern durch einfachere Versionen seiner selbst"_ @lorenz2012.
+Moritz Lenz beschreibt Rekursion treffend so: _„Eine Funktion macht nur einen kleinen Teil der Arbeit, verkleinert das Problem damit ein bisschen, und ruft sich dann selbst auf, um den Rest zu lösen."_ @lenz_rekursion Lorenz ergänzt: _„Man definiert etwas nicht explizit, sondern durch einfachere Versionen seiner selbst."_ @lorenz2012
+
+Das Prinzip dahinter heißt *rekursive Problemreduktion*: Ein Problem wird auf ein strukturgleiches, aber kleineres Problem zurückgeführt – immer wieder, bis man bei einem Fall ankommt, den man direkt lösen kann @infschule2024. Die wiederholte Ausführung überlässt man dabei komplett dem Programmiersystem, man beschreibt nur die Struktur der Lösung.
 
 Damit das nicht ewig weitergeht, braucht jede Rekursion zwei Teile:
 
-- *Basisfall* (auch Verankerung): Der einfachste Fall, der direkt beantwortet werden kann – ohne weiteren Selbstaufruf. Er sorgt dafür, dass die Rekursion irgendwann aufhört.
-- *Allgemeiner Fall* (auch Vererbung): Das aktuelle Problem wird auf ein kleineres Problem desselben Typs zurückgeführt, indem die Funktion sich selbst mit einem verkleinerten Argument aufruft.
-
-== Historischer Hintergrund
-
-Den ältesten bekannten rekursiven Algorithmus hat Euklid im dritten Jahrhundert vor Christus beschrieben: das Verfahren der wechselnden Wegnahme zur Berechnung des größten gemeinsamen Teilers. Die Idee: Zwei Zahlen $a$ und $b$ haben denselben größten gemeinsamen Teiler wie $b$ und der Rest der Division $a$ durch $b$. Man wiederholt das so lange, bis der Rest Null ist – dann ist man fertig @lorenz2012.
-
-Im 19. Jahrhundert formalisierte Giuseppe Peano die natürlichen Zahlen durch seine Peano-Axiome. Darin sind die natürlichen Zahlen induktiv definiert: Die Null existiert, und jede weitere natürliche Zahl ist der Nachfolger einer vorherigen. Grundoperationen wie Addition und Multiplikation lassen sich darauf aufbauend rekursiv definieren @lorenz2012.
-
-Im 20. Jahrhundert untersuchten Kurt Gödel und Alonzo Church, welche Funktionen überhaupt berechenbar sind. Gödel arbeitete dabei mit dem Konzept der primitiv-rekursiven Funktionen. In der Informatik wurde Rekursion dann mit der Sprache LISP (1958, John McCarthy) zum praktischen Werkzeug: McCarthy erkannte, dass man viele Berechnungen direkt als rekursive Funktionen schreiben kann.
+- *Basisfall* (auch Rekursionsanfang): Der einfachste Fall, der direkt beantwortet werden kann – ohne weiteren Selbstaufruf. Er sorgt dafür, dass die Rekursion irgendwann aufhört.
+- *Allgemeiner Fall* (auch Reduktionsschritt): Das aktuelle Problem wird auf ein kleineres Problem desselben Typs zurückgeführt. Wichtig: Die Verkleinerung muss nach endlich vielen Schritten zum Basisfall führen @infschule2024.
 
 == Strukturelle Rekursion
 
@@ -98,11 +92,59 @@ In Java schreibt sich das fast genauso:
   ```]
 )
 
-Was passiert beim Aufruf `factorial(4)`? Die Methode ruft sich selbst immer wieder auf, bis sie bei `factorial(0)` ankommt und direkt 1 zurückgibt. Danach werden die Ergebnisse rückwärts zusammengesetzt: $1$, dann $1 dot 1 = 1$, dann $2 dot 1 = 2$, dann $3 dot 2 = 6$, schließlich $4 dot 6 = 24$.
+Was passiert beim Aufruf `factorial(4)`? Abbildung 2 zeigt den Aufrufstapel (Call Stack): Die Methode ruft sich selbst auf, bis sie bei `factorial(0)` ankommt und direkt 1 zurückgibt. Danach werden die Ergebnisse schrittweise rückwärts aufgelöst.
+
+#figure(
+  caption: "Aufrufstapel bei factorial(4) – Aufbau (links) und Auflösung (rechts)",
+  block(
+    width: 100%,
+    grid(
+      columns: (1fr, 0.15fr, 1fr),
+      gutter: 0pt,
+      // Linke Seite: Aufbau
+      align(center)[
+        #set text(size: 9pt)
+        #table(
+          columns: (1fr),
+          inset: 6pt,
+          align: center,
+          fill: (_, row) => if row == 0 { rgb("#d0e8ff") } else { white },
+          [*Aufbau des Stapels*],
+          [`factorial(4)` wartet auf `factorial(3)`],
+          [`factorial(3)` wartet auf `factorial(2)`],
+          [`factorial(2)` wartet auf `factorial(1)`],
+          [`factorial(1)` wartet auf `factorial(0)`],
+          [`factorial(0)` → gibt *1* zurück],
+        )
+      ],
+      // Pfeil in der Mitte
+      align(center + horizon)[
+        #set text(size: 14pt)
+        *→*
+      ],
+      // Rechte Seite: Auflösung
+      align(center)[
+        #set text(size: 9pt)
+        #table(
+          columns: (1fr),
+          inset: 6pt,
+          align: center,
+          fill: (_, row) => if row == 0 { rgb("#d4f4dd") } else { white },
+          [*Auflösung des Stapels*],
+          [`factorial(1)` = 1 × 1 = *1*],
+          [`factorial(2)` = 2 × 1 = *2*],
+          [`factorial(3)` = 3 × 2 = *6*],
+          [`factorial(4)` = 4 × 6 = *24*],
+          [Ergebnis: *24*],
+        )
+      ],
+    )
+  )
+)
 
 == Terminierung
 
-Eine Rekursion muss irgendwann aufhören. Das funktioniert nur, wenn das Argument bei jedem Aufruf strikt kleiner wird und irgendwann den Basisfall erreicht @lorenz2012. Bei der Fakultät nimmt $n$ bei jedem Schritt um genau 1 ab – das führt zwingend zu $n = 0$.
+Eine Rekursion muss irgendwann aufhören. Das funktioniert nur, wenn das Argument bei jedem Aufruf strikt kleiner wird und irgendwann den Basisfall erreicht @lorenz2012 @infschule2024. Bei der Fakultät nimmt $n$ bei jedem Schritt um genau 1 ab – das führt zwingend zu $n = 0$.
 
 Fehlt der Basisfall oder wird das Argument nicht verkleinert, läuft die Rekursion endlos. In Java endet das mit einem `StackOverflowError`, weil für jeden offenen Aufruf Speicher auf dem Aufrufstapel belegt wird – und der ist nicht unbegrenzt groß.
 
@@ -112,13 +154,19 @@ Genau dieser Speicherverbrauch ist ein praktisches Problem bei tiefer Rekursion.
 
 Die *Endrekursion* (englisch: tail recursion) löst das: Eine Funktion ist endrekursiv, wenn der rekursive Aufruf die allerletzte Operation ist und das Ergebnis direkt zurückgegeben wird – ohne dass danach noch etwas damit passiert. Der Compiler kann dann den alten Stackeintrag einfach wiederverwenden. Dafür führt man einen Akkumulator ein, der das Zwischenergebnis mitträgt:
 
-Statt `return n * factorial(n-1)` (Multiplikation nach dem Aufruf) schreibt man den rekursiven Aufruf so, dass die Multiplikation bereits vorher erledigt und als Parameter übergeben wird. In Sprachen wie Haskell ist diese Optimierung garantiert. In Java hingegen optimiert die Standard-Laufzeitumgebung Endrekursion nicht automatisch – dort ist man besser mit einer Schleife bedient @lorenz2012.
+Statt `return n * factorial(n-1)` (Multiplikation nach dem Aufruf) schreibt man den rekursiven Aufruf so, dass die Multiplikation bereits vorher erledigt und als Parameter übergeben wird.
+
+Warum hilft das in Java nicht? Die JVM (Java Virtual Machine) unterstützt Endrekursionsoptimierung grundsätzlich nicht automatisch. Das liegt daran, dass die JVM vollständige Stack-Traces für Debugging und Fehleranalyse benötigt – sie muss also jeden Aufruf im Stapel behalten @odersky2021. Scala löst das anders: Die Annotation `@tailrec` weist den Scala-Compiler an, eine endrekursive Funktion *vor* der Übersetzung in JVM-Bytecode in eine einfache Schleife umzuwandeln. Es handelt sich also um eine Compiler-Transformation, nicht um ein JVM-Feature. In Java bleibt man deshalb besser bei einer `for`-Schleife, wenn der Eingabewert groß sein kann @lorenz2012.
 
 == Weitere Varianten
 
-Bei der *gegenseitigen Rekursion* rufen sich zwei Funktionen abwechselnd auf. Zum Beispiel: `istGerade(n)` ruft `istUngerade(n-1)` auf, und umgekehrt. Beide bilden zusammen eine Rekursion, bis der Basisfall ($n = 0$) erreicht ist.
+Bei der *gegenseitigen Rekursion* rufen sich zwei Funktionen abwechselnd auf. Zum Beispiel: `istGerade(n)` ruft `istUngerade(n-1)` auf, und umgekehrt. Beide bilden zusammen eine Rekursion, bis der Basisfall ($n = 0$) erreicht ist @lenz_rekursion.
 
-Bei der *verschachtelten Rekursion* ist der Selbstaufruf selbst wieder ein Argument eines weiteren Selbstaufrufs. Das bekannteste Beispiel ist die *Ackermann-Funktion*. Sie ist für alle natürlichen Zahlen berechenbar und terminiert immer – aber sie wächst so extrem schnell, dass sie schon für kleine Eingaben astronomische Werte annimmt. Wichtig: Die Ackermann-Funktion ist *nicht* primitiv-rekursiv, also nicht durch einfache Schleifen mit vorher bekannter Schrittzahl darstellbar. Das zeigt, dass Rekursion ausdrucksstärker ist als Schleifen @lorenz2012.
+Bei der *verschachtelten Rekursion* ist der Selbstaufruf selbst wieder ein Argument eines weiteren Selbstaufrufs. Das bekannteste Beispiel ist die *Ackermann-Funktion*. Sie ist für alle natürlichen Zahlen berechenbar und terminiert immer – aber sie wächst so extrem schnell, dass sie schon für kleine Eingaben astronomische Werte annimmt.
+
+Wichtig dabei: Die Ackermann-Funktion ist *nicht* primitiv-rekursiv. Primitiv-rekursiv bedeutet, dass sich eine Funktion auf eine Schleife mit vorher fest bekannter Schrittzahl zurückführen lässt – man weiß also bereits vor dem Start, wie oft man wiederholt. Einfache Funktionen wie Fakultät oder Addition sind primitiv-rekursiv. Bei der Ackermann-Funktion hingegen hängt die Anzahl der Schritte selbst von einem rekursiv berechneten Wert ab – sie entzieht sich damit jeder Schleife mit fester Laufzahl. Das zeigt, dass Rekursion ausdrucksstärker ist als Schleifen @lorenz2012.
+
+Ein praktisches Beispiel für Rekursion aus dem Alltag der Softwareentwicklung ist *Merge Sort*: Der Algorithmus teilt eine unsortierte Liste in der Mitte, sortiert beide Hälften jeweils rekursiv und fügt sie danach sortiert wieder zusammen. Der Basisfall ist eine Liste mit nur einem Element – die ist bereits sortiert. Lenz beschreibt das Prinzip so: Rekursion zerlegt größere Probleme auf natürliche Weise in kleinere, was die Lösung erheblich vereinfacht @lenz_rekursion. Merge Sort erreicht damit eine Laufzeit von $O(n log n)$ – deutlich besser als einfache Verfahren wie Bubblesort mit $O(n^2)$. Er ist kein akademisches Konstrukt, sondern in vielen Standardbibliotheken als realer Sortieralgorithmus implementiert @sedgewick2011.
 
 = Rekursive Datenstrukturen
 
@@ -132,23 +180,58 @@ Der Vorteil: Wenn man den Aufbau der Datenstruktur kennt, ergibt sich die Strukt
 
 = Rekursion in der funktionalen Programmierung
 
-== Rekursion statt Schleifen
+In Sprachen wie Java benutzt man `for`- oder `while`-Schleifen für Wiederholungen – dabei wird eine Variable bei jedem Durchlauf verändert. In rein funktionalen Sprachen hingegen bleiben Werte nach der Zuweisung unveränderlich, sogenannte *Immutability*. Schleifen, die auf veränderbaren Variablen basieren, passen dort nicht ins Konzept @pepper2006.
 
-In Sprachen wie Java benutzt man `for`- oder `while`-Schleifen für Wiederholungen – dabei wird eine Variable mit jedem Durchlauf verändert. In rein funktionalen Sprachen wie Haskell gibt es das nicht: Einmal zugewiesene Werte bleiben unveränderlich @pepper2006.
+Deshalb übernimmt Rekursion dort die Rolle der Schleifen: Statt eine Variable hochzuzählen, übergibt man den neuen Wert als Argument an den nächsten Aufruf. Das Ergebnis ist dasselbe – nur ohne veränderbaren Zustand @entwickler_rekursion.
 
-Deshalb übernimmt dort Rekursion die Rolle der Schleifen. Statt eine Variable zu erhöhen, übergibt man den neuen Wert als Argument an den nächsten Aufruf. Das Ergebnis ist dasselbe, nur ohne veränderbaren Zustand. Durch Endrekursion und die dazugehörige Compileroptimierung ist das auch in Bezug auf Speicher und Geschwindigkeit gleichwertig zu einer Schleife.
+*Scala* ist ein gutes Beispiel, weil es beides unterstützt: die objektorientierte Welt von Java und funktionale Konzepte. Ein direkter Vergleich zeigt den Unterschied:
 
-== Lazy Evaluation und unendliche Listen
+#figure(
+  caption: "Fakultät iterativ in Java vs. rekursiv in Scala",
+  table(
+    columns: (1fr, 1fr),
+    inset: 8pt,
+    align: left,
+    table.header([*Java – iterativ*], [*Scala – rekursiv*]),
+    [```java
+long factorial(int n) {
+  long result = 1;
+  for (int i = 1; i <= n; i++) {
+    result = result * i;
+  }
+  return result;
+}
+    ```],
+    [```scala
+def factorial(n: Int): Long =
+  if n == 0 then 1
+  else n * factorial(n - 1)
+    ```],
+  )
+)
 
-Haskell wertet Ausdrücke erst aus, wenn ihr Wert wirklich gebraucht wird – das nennt sich *lazy evaluation* (bedarfsgesteuerte Auswertung). Kombiniert mit Rekursion kann man damit sogar unendliche Datenstrukturen definieren, z.B. eine Liste aller natürlichen Zahlen. Haskell berechnet dann nur so viele Elemente, wie tatsächlich benötigt werden. Solche potenziell unendlichen Listen nennt man auch *Streams* und sie sind eng mit dem Thema Listen verbunden @krypczyk2021.
+Beide Varianten liefern dasselbe Ergebnis. Die Java-Version verändert `result` und `i` mit jedem Schleifendurchlauf. Die Scala-Version kommt ohne veränderbare Variablen aus – der Ablauf ergibt sich allein durch die Struktur der rekursiven Aufrufe. In Scala kann man außerdem mit `@tailrec` sicherstellen, dass der Compiler endrekursive Funktionen automatisch in eine Schleife umwandelt – dann entsteht kein Stacküberlauf @odersky2021.
 
-== Verbindung zum Lambda-Kalkül
+In Haskell, einer rein funktionalen Sprache, ist dieser Stil noch konsequenter. Funktionen werden durch *Pattern Matching* definiert: Man schreibt für jeden Fall eine eigene Zeile, und Haskell wählt automatisch die passende. Das folgende Beispiel zeigt die Fakultät und eine Funktion zum Summieren einer Liste – beide ohne eine einzige veränderbare Variable:
 
-Im Lambda-Kalkül – dem theoretischen Fundament der funktionalen Programmierung – gibt es keine Möglichkeit, Funktionen direkt zu benennen und sich selbst aufzurufen. Rekursion wird dort über den *Y-Kombinator* umgesetzt, einen sogenannten Fixpunktoperator. Er gibt für eine Funktion $f$ denjenigen Wert $x$ zurück, für den gilt $f(x) = x$. Damit kann man Rekursion aus dem Lambda-Kalkül heraus ableiten, ohne sie eingebaut zu haben @pepper2006.
+#figure(
+  caption: "Fakultät und Listensumme rekursiv in Haskell",
+  sourcecode[```haskell
+  -- Fakultät: Basisfall und allgemeiner Fall
+  factorial :: Int -> Int
+  factorial 0 = 1                        -- Basisfall
+  factorial n = n * factorial (n - 1)    -- allgemeiner Fall
 
-== Höherwertige Funktionen
+  -- Summe einer Liste: leere Liste und Kopf/Schwanz
+  sumList :: [Int] -> Int
+  sumList []     = 0                     -- Basisfall: leere Liste
+  sumList (x:xs) = x + sumList xs        -- Kopf + Summe des Rests
+  ```]
+)
 
-In der Praxis schreibt man in Haskell Rekursion oft nicht direkt aus, sondern benutzt höherwertige Funktionen wie `map`, `filter` oder `foldr`. Diese kapseln häufig vorkommende Rekursionsmuster. `foldr` zum Beispiel verallgemeinert die strukturelle Rekursion über Listen: Es kombiniert alle Elemente einer Liste durch eine übergebene Funktion von rechts nach links. Summe, Länge oder Umkehrung einer Liste lassen sich alle als Spezialfall von `foldr` schreiben. Die Rekursion steckt dabei immer noch drin – sie ist nur versteckt @block2011.
+Die Struktur entspricht exakt dem, was wir bisher in Java und Scala gesehen haben – nur schreibt man in Haskell keine `if`-Bedingungen, sondern Gleichungen pro Fall. Das `(x:xs)` ist Haskell-Notation für „erstes Element `x` und restliche Liste `xs`" und entspricht dem Kopf-Schwanz-Prinzip der rekursiven Listenstruktur @block2011.
+
+Neben der direkten Rekursion bieten funktionale Sprachen höherwertige Funktionen wie `map`, `filter` oder `fold`, die häufige Rekursionsmuster kapseln. Die Rekursion steckt dabei weiterhin drin – sie ist nur versteckt und muss nicht jedes Mal neu geschrieben werden @block2011.
 
 = Fazit
 
