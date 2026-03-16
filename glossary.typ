@@ -1,5 +1,8 @@
 #let glossary = (
-  Vulnerability: "A Vulnerability is a flaw in a computer system that weakens the overall security of the system.",
-  Patch: "A patch is data that is intended to be used to modify an existing software resource such as a program or a file, often to fix bugs and security vulnerabilities.",
-  Exploit: "An exploit is a method or piece of code that takes advantage of vulnerabilities in software, applications, networks, operating systems, or hardware, typically for malicious purposes.",
+  Rekursion: "Ein Konzept, bei dem sich eine Funktion oder Datenstruktur direkt oder indirekt auf sich selbst bezieht. Eine rekursive Definition besteht stets aus einem Basisfall (Abbruchbedingung) und einem allgemeinen Fall (Selbstaufruf).",
+  Basisfall: "Der Abbruchfall einer rekursiven Funktion, der ohne weiteren Selbstaufruf einen Wert zurückgibt und so die Terminierung der Rekursion sicherstellt.",
+  Selbstaufruf: "Der Teil einer rekursiven Funktion, in dem die Funktion sich selbst mit einem vereinfachten Argument aufruft.",
+  Endrekursion: "Eine spezielle Form der Rekursion, bei der der rekursive Aufruf die letzte Operation der Funktion ist. Viele Compiler können Endrekursion in eine Schleife umwandeln (Tail Call Optimization).",
+  Strukturelle_Rekursion: "Eine Form der Rekursion, die der Struktur des Eingabedatentyps folgt, z.B. bei der Verarbeitung von Listen oder Bäumen.",
+  Pattern_Matching: "Ein Sprachkonstrukt in funktionalen Programmiersprachen, das es erlaubt, Werte anhand ihrer Struktur zu unterscheiden und zu destrukturieren.",
 )
